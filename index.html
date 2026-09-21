@@ -22,29 +22,36 @@
       <div class="nav-label">จัดการ</div>
       <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span></button>
     </nav>
-    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v2.0</small></div>
+    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v3.0</small></div>
   </aside>
 
   <main class="main">
     <header class="topbar">
       <div class="crumb"><span>ภาพรวม</span><b id="pageTitle">แดชบอร์ดงาน</b></div>
-      <div class="top-actions"><button class="icon-btn">🔍</button><button class="icon-btn">🔔</button><div class="avatar">B</div></div>
+      <div class="top-actions">
+        <div class="year-filter-top">
+          <label>ปี:</label>
+          <select id="globalYear" onchange="onGlobalYearChange()"></select>
+        </div>
+        <div class="avatar">B</div>
+      </div>
     </header>
 
     <!-- Dashboard -->
     <section id="dashboard" class="view active-view">
       <div class="hero">
-        <div><p class="eyebrow">บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด</p><h1>แดชบอร์ดงาน</h1><p>เลือกจังหวัดเพื่อดูงานและลูกค้ารายบุคคล</p></div>
+        <div><p class="eyebrow">บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด</p><h1>แดชบอร์ดงาน</h1><p>สรุปภาพรวมลูกค้าและงานทั้งหมด</p></div>
         <button class="primary" onclick="showView('provinces')">+ เพิ่มงานใหม่</button>
       </div>
-      <div class="notice"><span>⚠</span><div><b>เริ่มงานจังหวัด</b><br><small>ระบบจะแสดงข้อมูลเช่น จังหวัด ลูกค้า งานขาย / ติดตั้ง / ซ่อม เพื่อค้นหางานได้ง่าย</small></div></div>
-      <div class="stats">
-        <div class="stat"><span class="stat-icon red">📍</span><div><small>จังหวัดที่มีงาน</small><strong id="provinceCount">0</strong></div></div>
-        <div class="stat"><span class="stat-icon green">👤</span><div><small>ลูกค้าทั้งหมด</small><strong id="customerCount">0</strong></div></div>
-        <div class="stat"><span class="stat-icon orange">🛒</span><div><small>งานขาย</small><strong id="salesCount">0</strong></div></div>
-        <div class="stat"><span class="stat-icon purple">🔧</span><div><small>งานติดตั้ง / ซ่อม</small><strong id="serviceCount">0</strong></div></div>
-      </div>
-      <div class="section-head"><div><h2>จังหวัด / พื้นที่</h2><p>เลือกจังหวัดเพื่อดูรายชื่อลูกค้าและงาน</p></div><button class="text-btn" onclick="showView('provinces')">ดูทั้งหมด →</button></div>
+
+      <!-- Yearly Summary -->
+      <div class="year-tabs" id="dashYearTabs"></div>
+
+      <div class="stats" id="dashStats"></div>
+
+      <div id="dashYearlySummary"></div>
+
+      <div class="section-head"><div><h2>จังหวัด / พื้นที่</h2><p>จังหวัดที่มีลูกค้า</p></div><button class="text-btn" onclick="showView('provinces')">ดูทั้งหมด →</button></div>
       <div id="provinceGrid" class="province-grid"></div>
     </section>
 
@@ -57,7 +64,7 @@
 
     <!-- Customers -->
     <section id="customers" class="view">
-      <div class="hero compact"><div><p class="eyebrow" id="customerEyebrow">ลูกค้า</p><h1 id="customerTitle">ลูกค้าทั้งหมด</h1><p>เลือกจังหวัดจากด้านซ้าย หรือดูรายชื่อลูกค้าทั้งหมด</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
+      <div class="hero compact"><div><p class="eyebrow" id="customerEyebrow">ลูกค้า</p><h1 id="customerTitle">ลูกค้าทั้งหมด</h1><p>ดูรายชื่อลูกค้า แก้ไข หรือลบได้</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
       <div class="search-row"><div class="search">🔍 <input id="customerSearch" placeholder="ค้นหาชื่อลูกค้า / เบอร์โทร / เลขที่งาน..." oninput="renderCustomers()"></div></div>
       <div id="customerTable" class="table-wrap"></div>
     </section>
@@ -87,12 +94,17 @@
           <p class="eyebrow" id="detailEyebrow">ลูกค้า</p>
           <h1 id="detailTitle">รายละเอียดลูกค้า</h1>
           <p id="detailInfo"></p>
+          <p id="detailAddress" class="detail-address"></p>
         </div>
         <div class="hero-actions">
           <button class="secondary" onclick="goBackFromDetail()">← ย้อนกลับ</button>
+          <button class="secondary" onclick="openEditCustomer()">✏️ แก้ไขลูกค้า</button>
+          <button class="btn-delete-outline" onclick="confirmDeleteCustomer()">🗑️ ลบลูกค้า</button>
           <button class="primary" onclick="openAddEntry()">+ เพิ่มรายการ</button>
         </div>
       </div>
+      <div class="year-tabs" id="detailYearTabs"></div>
+      <div id="detailSummary"></div>
       <div id="detailTable" class="table-wrap"></div>
     </section>
   </main>
@@ -106,15 +118,28 @@
     <p>เพิ่มข้อมูลลูกค้าเข้าสู่จังหวัดที่เลือก</p>
     <label>จังหวัด<select id="newProvince"></select></label>
     <label>ชื่อลูกค้า<input id="newName" placeholder="เช่น บริษัท ABC จำกัด"></label>
+    <label>ที่อยู่<input id="newAddress" placeholder="เช่น 123/4 ถ.สุขุมวิท แขวงบางจาก"></label>
     <label>เบอร์โทร<input id="newPhone" placeholder="08x-xxx-xxxx"></label>
     <label>ประเภทงาน
-      <select id="newType">
-        <option>ขาย</option>
-        <option>ติดตั้ง</option>
-        <option>ซ่อม</option>
-      </select>
+      <select id="newType"><option>ขาย</option><option>ติดตั้ง</option><option>ซ่อม</option></select>
     </label>
     <button class="primary full" onclick="saveCustomer()">บันทึกลูกค้า</button>
+  </div>
+</div>
+
+<!-- Modal: Edit Customer -->
+<div id="editModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeEditModal()">×</button>
+    <h2>แก้ไขข้อมูลลูกค้า</h2>
+    <p id="editModalSub">แก้ไขชื่อ ที่อยู่ และเบอร์โทร</p>
+    <label>ชื่อลูกค้า<input id="editName"></label>
+    <label>ที่อยู่<textarea id="editAddress" rows="3" placeholder="ที่อยู่ลูกค้า"></textarea></label>
+    <label>เบอร์โทร<input id="editPhone"></label>
+    <label>ประเภทงาน
+      <select id="editType"><option>ขาย</option><option>ติดตั้ง</option><option>ซ่อม</option></select>
+    </label>
+    <button class="primary full" onclick="saveEditCustomer()">บันทึกการแก้ไข</button>
   </div>
 </div>
 
@@ -129,6 +154,18 @@
     <label>ราคา (บาท)<input id="entryPrice" type="number" placeholder="0.00"></label>
     <label>เล่มบิล<input id="entryBill" placeholder="เช่น BL-001"></label>
     <button class="primary full" onclick="saveEntry()">บันทึกรายการ</button>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirmOverlay" class="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">ยืนยันการลบ</h3>
+    <p id="confirmMsg">ต้องการลบรายการนี้หรือไม่?</p>
+    <div class="confirm-actions">
+      <button class="secondary" onclick="cancelConfirm()">ยกเลิก</button>
+      <button class="btn-delete" id="confirmBtn" onclick="executeConfirm()">ลบ</button>
+    </div>
   </div>
 </div>
 
