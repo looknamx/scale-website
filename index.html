@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด • ระบบจัดการงาน</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">⚖</div><div><b>ง่วนเฮงหลี สเกล</b><span>แอนด์ ซีสเท็ม (2510)</span></div></div>
+    <div class="shop-select"><span>ระบบจัดการงาน</span><small>ขาย / ติดตั้ง / ซ่อม</small><b>▾</b></div>
+    <nav>
+      <div class="nav-label">ภาพรวม</div>
+      <button class="nav-item active" data-view="dashboard">📊 <span>แดชบอร์ด</span></button>
+      <button class="nav-item" data-view="provinces">📍 <span>จังหวัด / พื้นที่</span></button>
+      <div class="nav-label">งาน</div>
+      <button class="nav-item" data-view="sales">🛒 <span>งานขาย</span><em id="salesBadge">0</em></button>
+      <button class="nav-item" data-view="install">🔧 <span>งานติดตั้ง</span><em id="installBadge">0</em></button>
+      <button class="nav-item" data-view="repair">🛠️ <span>งานซ่อม</span><em id="repairBadge">0</em></button>
+      <div class="nav-label">จัดการ</div>
+      <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span></button>
+    </nav>
+    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v2.0</small></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb"><span>ภาพรวม</span><b id="pageTitle">แดชบอร์ดงาน</b></div>
+      <div class="top-actions"><button class="icon-btn">🔍</button><button class="icon-btn">🔔</button><div class="avatar">B</div></div>
+    </header>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="view active-view">
+      <div class="hero">
+        <div><p class="eyebrow">บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด</p><h1>แดชบอร์ดงาน</h1><p>เลือกจังหวัดเพื่อดูงานและลูกค้ารายบุคคล</p></div>
+        <button class="primary" onclick="showView('provinces')">+ เพิ่มงานใหม่</button>
+      </div>
+      <div class="notice"><span>⚠</span><div><b>เริ่มงานจังหวัด</b><br><small>ระบบจะแสดงข้อมูลเช่น จังหวัด ลูกค้า งานขาย / ติดตั้ง / ซ่อม เพื่อค้นหางานได้ง่าย</small></div></div>
+      <div class="stats">
+        <div class="stat"><span class="stat-icon red">📍</span><div><small>จังหวัดที่มีงาน</small><strong id="provinceCount">0</strong></div></div>
+        <div class="stat"><span class="stat-icon green">👤</span><div><small>ลูกค้าทั้งหมด</small><strong id="customerCount">0</strong></div></div>
+        <div class="stat"><span class="stat-icon orange">🛒</span><div><small>งานขาย</small><strong id="salesCount">0</strong></div></div>
+        <div class="stat"><span class="stat-icon purple">🔧</span><div><small>งานติดตั้ง / ซ่อม</small><strong id="serviceCount">0</strong></div></div>
+      </div>
+      <div class="section-head"><div><h2>จังหวัด / พื้นที่</h2><p>เลือกจังหวัดเพื่อดูรายชื่อลูกค้าและงาน</p></div><button class="text-btn" onclick="showView('provinces')">ดูทั้งหมด →</button></div>
+      <div id="provinceGrid" class="province-grid"></div>
+    </section>
+
+    <!-- Provinces -->
+    <section id="provinces" class="view">
+      <div class="hero compact"><div><p class="eyebrow">พื้นที่รับผิดชอบ</p><h1>จังหวัดทั้งหมด</h1><p>เลือกจังหวัดเพื่อเข้าสู่รายชื่อลูกค้ารายบุคคล</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
+      <div class="search-row"><div class="search">🔍 <input id="provinceSearch" placeholder="ค้นหาจังหวัด..." oninput="renderProvinces()"></div><span id="provinceResult"></span></div>
+      <div id="provinceList" class="province-list"></div>
+    </section>
+
+    <!-- Customers -->
+    <section id="customers" class="view">
+      <div class="hero compact"><div><p class="eyebrow" id="customerEyebrow">ลูกค้า</p><h1 id="customerTitle">ลูกค้าทั้งหมด</h1><p>เลือกจังหวัดจากด้านซ้าย หรือดูรายชื่อลูกค้าทั้งหมด</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
+      <div class="search-row"><div class="search">🔍 <input id="customerSearch" placeholder="ค้นหาชื่อลูกค้า / เบอร์โทร / เลขที่งาน..." oninput="renderCustomers()"></div></div>
+      <div id="customerTable" class="table-wrap"></div>
+    </section>
+
+    <!-- Sales -->
+    <section id="sales" class="view">
+      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานขาย</h1><p>ติดตามรายการขายตราชั่งและสถานะการส่งมอบ</p></div></div>
+      <div id="salesTable" class="table-wrap"></div>
+    </section>
+
+    <!-- Install -->
+    <section id="install" class="view">
+      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานติดตั้ง</h1><p>ติดตามคิวติดตั้งและทีมช่าง</p></div></div>
+      <div id="installTable" class="table-wrap"></div>
+    </section>
+
+    <!-- Repair -->
+    <section id="repair" class="view">
+      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานซ่อม</h1><p>ติดตามงานแจ้งซ่อมและสถานะงาน</p></div></div>
+      <div id="repairTable" class="table-wrap"></div>
+    </section>
+
+    <!-- Customer Detail -->
+    <section id="customerDetail" class="view">
+      <div class="hero compact">
+        <div>
+          <p class="eyebrow" id="detailEyebrow">ลูกค้า</p>
+          <h1 id="detailTitle">รายละเอียดลูกค้า</h1>
+          <p id="detailInfo"></p>
+        </div>
+        <div class="hero-actions">
+          <button class="secondary" onclick="goBackFromDetail()">← ย้อนกลับ</button>
+          <button class="primary" onclick="openAddEntry()">+ เพิ่มรายการ</button>
+        </div>
+      </div>
+      <div id="detailTable" class="table-wrap"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: Add Customer -->
+<div id="modal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>เพิ่มลูกค้า</h2>
+    <p>เพิ่มข้อมูลลูกค้าเข้าสู่จังหวัดที่เลือก</p>
+    <label>จังหวัด<select id="newProvince"></select></label>
+    <label>ชื่อลูกค้า<input id="newName" placeholder="เช่น บริษัท ABC จำกัด"></label>
+    <label>เบอร์โทร<input id="newPhone" placeholder="08x-xxx-xxxx"></label>
+    <label>ประเภทงาน
+      <select id="newType">
+        <option>ขาย</option>
+        <option>ติดตั้ง</option>
+        <option>ซ่อม</option>
+      </select>
+    </label>
+    <button class="primary full" onclick="saveCustomer()">บันทึกลูกค้า</button>
+  </div>
+</div>
+
+<!-- Modal: Add Entry -->
+<div id="entryModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeEntryModal()">×</button>
+    <h2>เพิ่มรายการ</h2>
+    <p id="entryModalSub">เพิ่มรายการซื้อ/ซ่อมของลูกค้า</p>
+    <label>วันที่<input id="entryDate" type="date"></label>
+    <label>รายละเอียด (ซื้อ/ซ่อมอะไร)<input id="entryDesc" placeholder="เช่น ตราชั่ง 100 ตัน, ซ่อมเซ็นเซอร์"></label>
+    <label>ราคา (บาท)<input id="entryPrice" type="number" placeholder="0.00"></label>
+    <label>เล่มบิล<input id="entryBill" placeholder="เช่น BL-001"></label>
+    <button class="primary full" onclick="saveEntry()">บันทึกรายการ</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
