@@ -14,15 +14,14 @@
     <nav>
       <div class="nav-label">ภาพรวม</div>
       <button class="nav-item active" data-view="dashboard">📊 <span>แดชบอร์ด</span></button>
-      <button class="nav-item" data-view="provinces">📍 <span>จังหวัด / พื้นที่</span></button>
       <div class="nav-label">งาน</div>
       <button class="nav-item" data-view="sales">🛒 <span>งานขาย</span><em id="salesBadge">0</em></button>
       <button class="nav-item" data-view="install">🔧 <span>งานติดตั้ง</span><em id="installBadge">0</em></button>
       <button class="nav-item" data-view="repair">🛠️ <span>งานซ่อม</span><em id="repairBadge">0</em></button>
       <div class="nav-label">จัดการ</div>
-      <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span></button>
+      <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span><em id="customerBadge">0</em></button>
     </nav>
-    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v3.0</small></div>
+    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v4.0</small></div>
   </aside>
 
   <main class="main">
@@ -41,49 +40,56 @@
     <section id="dashboard" class="view active-view">
       <div class="hero">
         <div><p class="eyebrow">บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด</p><h1>แดชบอร์ดงาน</h1><p>สรุปภาพรวมลูกค้าและงานทั้งหมด</p></div>
-        <button class="primary" onclick="showView('provinces')">+ เพิ่มงานใหม่</button>
+        <button class="primary" onclick="showView('customers'); openAddCustomer()">+ เพิ่มงานใหม่</button>
       </div>
 
-      <!-- Yearly Summary -->
       <div class="year-tabs" id="dashYearTabs"></div>
-
-      <div class="stats" id="dashStats"></div>
-
       <div id="dashYearlySummary"></div>
 
-      <div class="section-head"><div><h2>จังหวัด / พื้นที่</h2><p>จังหวัดที่มีลูกค้า</p></div><button class="text-btn" onclick="showView('provinces')">ดูทั้งหมด →</button></div>
-      <div id="provinceGrid" class="province-grid"></div>
-    </section>
-
-    <!-- Provinces -->
-    <section id="provinces" class="view">
-      <div class="hero compact"><div><p class="eyebrow">พื้นที่รับผิดชอบ</p><h1>จังหวัดทั้งหมด</h1><p>เลือกจังหวัดเพื่อเข้าสู่รายชื่อลูกค้ารายบุคคล</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
-      <div class="search-row"><div class="search">🔍 <input id="provinceSearch" placeholder="ค้นหาจังหวัด..." oninput="renderProvinces()"></div><span id="provinceResult"></span></div>
-      <div id="provinceList" class="province-list"></div>
+      <div class="section-head" style="margin-top: 30px;">
+        <div><h2>สรุปปริมาณงานตามจังหวัด (Top 5)</h2><p>จังหวัดที่มีปริมาณงานมากที่สุดในเงื่อนไขปีที่เลือก</p></div>
+        <button class="text-btn" onclick="showView('customers')">ดูลูกค้าทั้งหมด →</button>
+      </div>
+      <div id="dashTopProvinces" class="top-provinces-grid"></div>
     </section>
 
     <!-- Customers -->
     <section id="customers" class="view">
-      <div class="hero compact"><div><p class="eyebrow" id="customerEyebrow">ลูกค้า</p><h1 id="customerTitle">ลูกค้าทั้งหมด</h1><p>ดูรายชื่อลูกค้า แก้ไข หรือลบได้</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
-      <div class="search-row"><div class="search">🔍 <input id="customerSearch" placeholder="ค้นหาชื่อลูกค้า / เบอร์โทร / เลขที่งาน..." oninput="renderCustomers()"></div></div>
+      <div class="hero compact"><div><p class="eyebrow" id="customerEyebrow">จัดการ</p><h1 id="customerTitle">ลูกค้าทั้งหมด</h1><p>ดูรายชื่อลูกค้า ค้นหา และกรองตามจังหวัด</p></div><button class="primary" onclick="openAddCustomer()">+ เพิ่มลูกค้า</button></div>
+      <div class="search-row">
+        <div class="search">🔍 <input id="customerSearch" placeholder="ค้นหาชื่อลูกค้า / เบอร์โทร / เลขที่งาน..." oninput="renderCustomers()"></div>
+        <select id="filterProvCustomers" class="filter-select" onchange="renderCustomers()"><option value="all">ทุกจังหวัด</option></select>
+      </div>
       <div id="customerTable" class="table-wrap"></div>
     </section>
 
     <!-- Sales -->
     <section id="sales" class="view">
       <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานขาย</h1><p>ติดตามรายการขายตราชั่งและสถานะการส่งมอบ</p></div></div>
+      <div class="search-row">
+        <div class="search">🔍 <input id="salesSearch" placeholder="ค้นหางานขาย..." oninput="renderJobs('ขาย', 'salesTable', 'filterProvSales', 'salesSearch')"></div>
+        <select id="filterProvSales" class="filter-select" onchange="renderJobs('ขาย', 'salesTable', 'filterProvSales', 'salesSearch')"><option value="all">ทุกจังหวัด</option></select>
+      </div>
       <div id="salesTable" class="table-wrap"></div>
     </section>
 
     <!-- Install -->
     <section id="install" class="view">
       <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานติดตั้ง</h1><p>ติดตามคิวติดตั้งและทีมช่าง</p></div></div>
+      <div class="search-row">
+        <div class="search">🔍 <input id="installSearch" placeholder="ค้นหางานติดตั้ง..." oninput="renderJobs('ติดตั้ง', 'installTable', 'filterProvInstall', 'installSearch')"></div>
+        <select id="filterProvInstall" class="filter-select" onchange="renderJobs('ติดตั้ง', 'installTable', 'filterProvInstall', 'installSearch')"><option value="all">ทุกจังหวัด</option></select>
+      </div>
       <div id="installTable" class="table-wrap"></div>
     </section>
 
     <!-- Repair -->
     <section id="repair" class="view">
       <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานซ่อม</h1><p>ติดตามงานแจ้งซ่อมและสถานะงาน</p></div></div>
+      <div class="search-row">
+        <div class="search">🔍 <input id="repairSearch" placeholder="ค้นหางานซ่อม..." oninput="renderJobs('ซ่อม', 'repairTable', 'filterProvRepair', 'repairSearch')"></div>
+        <select id="filterProvRepair" class="filter-select" onchange="renderJobs('ซ่อม', 'repairTable', 'filterProvRepair', 'repairSearch')"><option value="all">ทุกจังหวัด</option></select>
+      </div>
       <div id="repairTable" class="table-wrap"></div>
     </section>
 
@@ -99,7 +105,6 @@
         <div class="hero-actions">
           <button class="secondary" onclick="goBackFromDetail()">← ย้อนกลับ</button>
           <button class="secondary" onclick="openEditCustomer()">✏️ แก้ไขลูกค้า</button>
-          <button class="btn-delete-outline" onclick="confirmDeleteCustomer()">🗑️ ลบลูกค้า</button>
           <button class="primary" onclick="openAddEntry()">+ เพิ่มรายการ</button>
         </div>
       </div>
@@ -115,7 +120,7 @@
   <div class="modal-card">
     <button class="modal-close" onclick="closeModal()">×</button>
     <h2>เพิ่มลูกค้า</h2>
-    <p>เพิ่มข้อมูลลูกค้าเข้าสู่จังหวัดที่เลือก</p>
+    <p>เพิ่มข้อมูลลูกค้าเข้าสู่ระบบ</p>
     <label>จังหวัด<select id="newProvince"></select></label>
     <label>ชื่อลูกค้า<input id="newName" placeholder="เช่น บริษัท ABC จำกัด"></label>
     <label>ที่อยู่<input id="newAddress" placeholder="เช่น 123/4 ถ.สุขุมวิท แขวงบางจาก"></label>
@@ -139,7 +144,10 @@
     <label>ประเภทงาน
       <select id="editType"><option>ขาย</option><option>ติดตั้ง</option><option>ซ่อม</option></select>
     </label>
-    <button class="primary full" onclick="saveEditCustomer()">บันทึกการแก้ไข</button>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn-delete-outline" onclick="confirmDeleteCustomer()">🗑️ ลบลูกค้า</button>
+      <button class="primary" style="flex:1" onclick="saveEditCustomer()">บันทึกการแก้ไข</button>
+    </div>
   </div>
 </div>
 

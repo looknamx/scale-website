@@ -70,16 +70,14 @@ const data = {
 };
 
 /* ===== State ===== */
-let selectedProvince = null;
 let currentDetail = null; // { province, index }
-let pendingDeleteIdx = null; // For entry deletion
-let globalYear = "all"; // "all" or "2025" etc.
-let detailYear = "all"; // Year filter inside customer detail
-let pendingDeleteCustomer = null; // For customer deletion { province, index }
+let pendingDeleteIdx = null; 
+let globalYear = "all"; 
+let detailYear = "all"; 
+let pendingDeleteCustomer = null; 
 
 const titles = {
   dashboard: "แดชบอร์ดงาน",
-  provinces: "จังหวัด / พื้นที่",
   customers: "ลูกค้าทั้งหมด",
   sales: "งานขาย",
   install: "งานติดตั้ง",
@@ -112,20 +110,17 @@ function formatDate(d) {
   return dt.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
 }
 
-// Convert CE (2025) to BE (2568)
 function getThaiYear(yearStr) {
   if (yearStr === "all") return "ทุกปี";
   const y = parseInt(yearStr, 10);
   return isNaN(y) ? yearStr : (y + 543).toString();
 }
 
-// Extract year from date string (YYYY-MM-DD)
 function getYearFromDate(dateStr) {
   if (!dateStr) return null;
   return dateStr.split("-")[0];
 }
 
-// Get all unique years from entries and customer creation dates
 function getAvailableYears() {
   const years = new Set();
   allCustomers().forEach(c => {
@@ -143,7 +138,6 @@ function filterEntriesByYear(entries, year) {
   return entries.filter(e => getYearFromDate(e.date) === year);
 }
 
-// Check if customer is active in the given year
 function isCustomerInYear(c, year) {
   if (year === "all") return true;
   if (c.createdYear === year) return true;
@@ -157,17 +151,29 @@ function initGlobalYears() {
   select.innerHTML = '<option value="all">ทุกปี</option>' + 
     years.map(y => `<option value="${y}">ปี ${getThaiYear(y)}</option>`).join("");
   select.value = globalYear;
+  populateProvinceFilters();
+}
+
+function populateProvinceFilters() {
+  const activeProvinces = Object.keys(data).filter(k => data[k].length > 0).sort();
+  const opts = '<option value="all">ทุกจังหวัด</option>' + 
+    activeProvinces.map(p => `<option value="${p}">${p}</option>`).join('');
+  
+  ["filterProvCustomers", "filterProvSales", "filterProvInstall", "filterProvRepair"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
 }
 
 function onGlobalYearChange() {
   globalYear = document.getElementById("globalYear").value;
   renderStats();
-  // Refresh current view
+  
   const activeView = document.querySelector(".view.active-view").id;
   if (activeView === "customers") renderCustomers();
-  if (activeView === "sales") renderJobs("ขาย", "salesTable");
-  if (activeView === "install") renderJobs("ติดตั้ง", "installTable");
-  if (activeView === "repair") renderJobs("ซ่อม", "repairTable");
+  if (activeView === "sales") renderJobs("ขาย", "salesTable", "filterProvSales", "salesSearch");
+  if (activeView === "install") renderJobs("ติดตั้ง", "installTable", "filterProvInstall", "installSearch");
+  if (activeView === "repair") renderJobs("ซ่อม", "repairTable", "filterProvRepair", "repairSearch");
 }
 
 /* ===== Render Stats ===== */
@@ -177,83 +183,69 @@ function renderStats() {
     cs = cs.filter(c => isCustomerInYear(c, globalYear));
   }
   
-  // Calculate revenue for the selected year
-  let totalSalesRev = 0, totalInstallRev = 0, totalRepairRev = 0;
+  let salesRev = 0, installRev = 0, repairRev = 0;
+  let salesCount = 0, installCount = 0, repairCount = 0;
+  let provCounts = {};
   
   cs.forEach(c => {
     const yearEntries = filterEntriesByYear(c.entries, globalYear);
     const rev = yearEntries.reduce((sum, e) => sum + (Number(e.price) || 0), 0);
-    if (c.type === "ขาย") totalSalesRev += rev;
-    else if (c.type === "ติดตั้ง") totalInstallRev += rev;
-    else if (c.type === "ซ่อม") totalRepairRev += rev;
+    // Count jobs (using customer base type)
+    if (c.type === "ขาย") { salesRev += rev; salesCount++; }
+    else if (c.type === "ติดตั้ง") { installRev += rev; installCount++; }
+    else if (c.type === "ซ่อม") { repairRev += rev; repairCount++; }
+
+    // Count jobs per province
+    if (!provCounts[c.province]) provCounts[c.province] = 0;
+    provCounts[c.province]++;
   });
 
-  // Count active provinces based on filtered customers
-  const activeProvinces = new Set(cs.map(c => c.province)).size;
-
-  document.getElementById("provinceCount").textContent = activeProvinces;
-  document.getElementById("customerCount").textContent = cs.length;
-  document.getElementById("salesCount").textContent = cs.filter(x => x.type === "ขาย").length;
-  document.getElementById("serviceCount").textContent = cs.filter(x => x.type !== "ขาย").length;
-  
-  // Update sidebar badges (always show all-time or based on global year? Let's use global year)
+  // Sidebar Badges Update
+  const allTimeCs = allCustomers();
+  document.getElementById("customerBadge").textContent = cs.length;
   document.getElementById("salesBadge").textContent = cs.filter(x => x.type === "ขาย").length;
   document.getElementById("installBadge").textContent = cs.filter(x => x.type === "ติดตั้ง").length;
   document.getElementById("repairBadge").textContent = cs.filter(x => x.type === "ซ่อม").length;
 
-  // Render Yearly Summary Revenue (Dashboard only)
+  // Yearly Summary (Dashboard)
   document.getElementById("dashYearlySummary").innerHTML = `
-    <div class="section-head" style="margin-top:10px;"><h2>สรุปรายได้ ${globalYear === 'all' ? 'รวมทุกปี' : 'ประจำปี ' + getThaiYear(globalYear)}</h2></div>
     <div class="revenue-cards">
-      <div class="revenue-card"><small>ยอดขายตราชั่ง</small><h2>฿${formatPrice(totalSalesRev)}</h2></div>
-      <div class="revenue-card"><small>ยอดงานติดตั้ง</small><h2>฿${formatPrice(totalInstallRev)}</h2></div>
-      <div class="revenue-card"><small>ยอดงานซ่อม</small><h2>฿${formatPrice(totalRepairRev)}</h2></div>
+      <div class="revenue-card"><small>งานขายตราชั่ง</small><h2>${salesCount} งาน</h2><span>ยอดรวม ฿${formatPrice(salesRev)}</span></div>
+      <div class="revenue-card"><small>งานติดตั้ง</small><h2>${installCount} งาน</h2><span>ยอดรวม ฿${formatPrice(installRev)}</span></div>
+      <div class="revenue-card"><small>งานซ่อม</small><h2>${repairCount} งาน</h2><span>ยอดรวม ฿${formatPrice(repairRev)}</span></div>
     </div>
   `;
+
+  // Top Provinces Summary
+  const sortedProvs = Object.entries(provCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const provHtml = sortedProvs.length ? sortedProvs.map((p, i) => `
+    <div class="top-province-card" onclick="openProvinceFilter('${p[0]}')">
+      <div class="rank">#${i+1}</div>
+      <div><b>${p[0]}</b><small>จำนวน ${p[1]} งาน</small></div>
+    </div>
+  `).join("") : '<div class="empty" style="grid-column: 1/-1;">ไม่มีข้อมูลจังหวัดในปีนี้</div>';
+  
+  document.getElementById("dashTopProvinces").innerHTML = provHtml;
 }
 
-/* ===== Province Cards (Dashboard) ===== */
-function provinceCard(p) {
-  const n = data[p].length;
-  return '<div class="province-card" onclick="openProvince(\'' + p + '\')">' +
-    '<div class="pin">📍</div><b>' + p + '</b>' +
-    '<small>พื้นที่รับผิดชอบ</small>' +
-    '<strong>' + n + ' ลูกค้า →</strong></div>';
-}
-
-function renderHome() {
-  const provinces = Object.keys(data).filter(k => data[k].length > 0);
-  document.getElementById("provinceGrid").innerHTML = provinces.slice(0, 8).map(provinceCard).join("");
-}
-
-/* ===== Province List ===== */
-function renderProvinces() {
-  const q = (document.getElementById("provinceSearch").value || "").toLowerCase();
-  const ps = Object.keys(data).filter(k => data[k].length > 0 && k.toLowerCase().includes(q));
-  document.getElementById("provinceResult").textContent = ps.length + " จังหวัด";
-  document.getElementById("provinceList").innerHTML = ps.map(p =>
-    '<div class="province-row" onclick="openProvince(\'' + p + '\')">' +
-    '<div class="pin">📍</div><div><b>' + p + '</b>' +
-    '<small>ดูรายชื่อลูกค้าและงาน</small></div>' +
-    '<strong>' + data[p].length + ' ลูกค้า →</strong></div>'
-  ).join("") || '<div class="empty">ไม่พบจังหวัดที่ค้นหา</div>';
+function openProvinceFilter(p) {
+  document.getElementById("filterProvCustomers").value = p;
+  document.getElementById("customerSearch").value = "";
+  showView("customers");
 }
 
 /* ===== Customer List ===== */
 function renderCustomers() {
   let cs = allCustomers();
-  
   if (globalYear !== "all") {
     cs = cs.filter(c => isCustomerInYear(c, globalYear));
   }
 
   const q = (document.getElementById("customerSearch").value || "").toLowerCase();
   if (q) cs = cs.filter(x => Object.values(x).some(v => String(v).toLowerCase().includes(q)));
-  if (selectedProvince) cs = cs.filter(x => x.province === selectedProvince);
-
-  document.getElementById("customerEyebrow").textContent = selectedProvince || "ลูกค้า";
-  document.getElementById("customerTitle").textContent = selectedProvince
-    ? "ลูกค้า • " + selectedProvince : "ลูกค้าทั้งหมด";
+  
+  const prov = document.getElementById("filterProvCustomers").value;
+  if (prov !== "all") cs = cs.filter(x => x.province === prov);
 
   document.getElementById("customerTable").innerHTML = cs.length
     ? '<table class="table"><thead><tr>' +
@@ -276,13 +268,19 @@ function renderCustomers() {
 }
 
 /* ===== Job Tables (Sales/Install/Repair) ===== */
-function renderJobs(type, id) {
+function renderJobs(type, tableId, filterId, searchId) {
   let cs = allCustomers().filter(x => x.type === type);
   if (globalYear !== "all") {
     cs = cs.filter(c => isCustomerInYear(c, globalYear));
   }
 
-  document.getElementById(id).innerHTML = cs.length
+  const q = (document.getElementById(searchId).value || "").toLowerCase();
+  if (q) cs = cs.filter(x => Object.values(x).some(v => String(v).toLowerCase().includes(q)));
+  
+  const prov = document.getElementById(filterId).value;
+  if (prov !== "all") cs = cs.filter(x => x.province === prov);
+
+  document.getElementById(tableId).innerHTML = cs.length
     ? '<table class="table"><thead><tr>' +
       '<th>เลขที่งาน</th><th>ลูกค้า</th><th>จังหวัด</th><th>โทรศัพท์</th><th>สถานะ</th><th>รายการ</th><th></th>' +
       '</tr></thead><tbody>' +
@@ -305,7 +303,7 @@ function renderJobs(type, id) {
 /* ===== Customer Detail View ===== */
 function openDetail(province, idx) {
   currentDetail = { province, index: idx };
-  detailYear = "all"; // Reset detail year filter
+  detailYear = "all"; 
   showView("customerDetail");
 }
 
@@ -328,7 +326,6 @@ function renderDetail() {
   document.getElementById("detailInfo").textContent = "โทร: " + phone + "  |  เลขที่งาน: " + job;
   document.getElementById("detailAddress").textContent = address;
 
-  // Year Tabs for Detail
   const cYears = new Set();
   entries.forEach(e => { const y = getYearFromDate(e.date); if(y) cYears.add(y); });
   const sortedCYears = Array.from(cYears).sort((a,b)=>b-a);
@@ -339,28 +336,23 @@ function renderDetail() {
   });
   document.getElementById("detailYearTabs").innerHTML = tabsHtml;
 
-  // Filter entries
   const filteredEntries = filterEntriesByYear(entries, detailYear);
   const totalPrice = filteredEntries.reduce((s, e) => s + (Number(e.price) || 0), 0);
 
-  // Summary cards
   document.getElementById("detailSummary").innerHTML = '<div class="detail-summary">' +
     '<div class="detail-card"><small>ประเภทงาน</small><strong>' + type + '</strong></div>' +
     '<div class="detail-card"><small>จำนวนรายการ (' + (detailYear==="all"?"รวม":"ปี "+getThaiYear(detailYear)) + ')</small><strong>' + filteredEntries.length + ' รายการ</strong></div>' +
     '<div class="detail-card"><small>ยอดรวม (' + (detailYear==="all"?"รวม":"ปี "+getThaiYear(detailYear)) + ')</small><strong class="price">฿' + formatPrice(totalPrice) + '</strong></div>' +
     '</div>';
 
-  // Entries table
   let html = '';
   if (filteredEntries.length) {
     html += '<div class="table-wrap"><table class="table"><thead><tr>' +
       '<th>วันที่</th><th>รายละเอียด</th><th>ราคา (บาท)</th><th>เล่มบิล</th><th></th>' +
       '</tr></thead><tbody>';
     
-    // We need original index for deletion
     entries.forEach((e, originalIdx) => {
       if (detailYear !== "all" && getYearFromDate(e.date) !== detailYear) return;
-      
       html += '<tr>' +
         '<td>' + formatDate(e.date) + '</td>' +
         '<td><b>' + e.desc + '</b></td>' +
@@ -432,16 +424,13 @@ function executeDeleteCustomer() {
     data[province].splice(index, 1);
     pendingDeleteCustomer = null;
     closeConfirm();
-    
-    // Refresh UI
+    closeEditModal();
     currentDetail = null;
+    initGlobalYears(); 
     renderStats();
-    renderHome();
-    initGlobalYears(); // Re-evaluate years just in case
     showView("customers");
   }
 }
-
 
 /* ===== Add Entry Modal ===== */
 function openAddEntry() {
@@ -475,7 +464,6 @@ function saveEntry() {
   const entryDate = date || new Date().toISOString().split("T")[0];
   cust[4].push({ date: entryDate, desc, price: Number(price), bill: bill || "-" });
 
-  // Update global years if new year introduced
   const y = getYearFromDate(entryDate);
   if (!Array.from(document.getElementById("globalYear").options).some(o => o.value === y)) {
     initGlobalYears();
@@ -540,26 +528,24 @@ function showView(id) {
   document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === id));
   document.getElementById("pageTitle").textContent = titles[id] || "แดชบอร์ดงาน";
 
-  if (id === "provinces") renderProvinces();
   if (id === "customers") renderCustomers();
-  if (id === "sales") renderJobs("ขาย", "salesTable");
-  if (id === "install") renderJobs("ติดตั้ง", "installTable");
-  if (id === "repair") renderJobs("ซ่อม", "repairTable");
+  if (id === "sales") renderJobs("ขาย", "salesTable", "filterProvSales", "salesSearch");
+  if (id === "install") renderJobs("ติดตั้ง", "installTable", "filterProvInstall", "installSearch");
+  if (id === "repair") renderJobs("ซ่อม", "repairTable", "filterProvRepair", "repairSearch");
   if (id === "customerDetail") renderDetail();
   window.scrollTo(0, 0);
-}
-
-function openProvince(p) {
-  selectedProvince = p;
-  document.getElementById("customerSearch").value = "";
-  showView("customers");
 }
 
 /* ===== Add Customer Modal ===== */
 function openAddCustomer() {
   const s = document.getElementById("newProvince");
   s.innerHTML = ALL_PROVINCES.map(p => '<option>' + p + '</option>').join("");
-  if (selectedProvince) s.value = selectedProvince;
+  
+  const currentProvFilter = document.getElementById("filterProvCustomers").value;
+  if (currentProvFilter && currentProvFilter !== "all") {
+    s.value = currentProvFilter;
+  }
+  
   document.getElementById("newName").value = "";
   document.getElementById("newAddress").value = "";
   document.getElementById("newPhone").value = "";
@@ -585,15 +571,13 @@ function saveCustomer() {
   const currentYear = new Date().getFullYear().toString();
 
   if (!data[p]) data[p] = [];
-  // [Name, Phone, Type, JobNo, Entries, Address, CreatedYear]
   data[p].push([n, phone || "-", type, prefix + "-" + num, [], address || "-", currentYear]);
 
   closeModal();
-  initGlobalYears(); // Re-evaluate years just in case
+  initGlobalYears();
   renderStats();
-  renderHome();
-  if (document.getElementById("provinces").classList.contains("active-view")) renderProvinces();
-  if (selectedProvince === p && document.getElementById("customers").classList.contains("active-view")) renderCustomers();
+  
+  if (document.getElementById("customers").classList.contains("active-view")) renderCustomers();
   alert("เพิ่มลูกค้าเรียบร้อยแล้ว");
 }
 
@@ -605,4 +589,3 @@ document.querySelectorAll(".nav-item").forEach(b =>
 );
 initGlobalYears();
 renderStats();
-renderHome();
