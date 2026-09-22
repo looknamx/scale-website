@@ -15,9 +15,9 @@
       <div class="nav-label">ภาพรวม</div>
       <button class="nav-item active" data-view="dashboard">📊 <span>แดชบอร์ด</span></button>
       <div class="nav-label">งาน</div>
-      <button class="nav-item" data-view="sales">🛒 <span>งานขาย</span><em id="salesBadge">0</em></button>
-      <button class="nav-item" data-view="install">🔧 <span>งานติดตั้ง</span><em id="installBadge">0</em></button>
-      <button class="nav-item" data-view="repair">🛠️ <span>งานซ่อม</span><em id="repairBadge">0</em></button>
+      <button class="nav-item" data-view="jobs">📋 <span>งานทั้งหมด</span><em id="jobsBadge">0</em></button>
+      <div class="nav-label">ปี</div>
+      <div id="sidebarYearList" class="sidebar-year-list"></div>
       <div class="nav-label">จัดการ</div>
       <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span><em id="customerBadge">0</em></button>
     </nav>
@@ -43,7 +43,6 @@
         <button class="primary" onclick="showView('customers'); openAddCustomer()">+ เพิ่มงานใหม่</button>
       </div>
 
-      <div class="year-tabs" id="dashYearTabs"></div>
       <div id="dashYearlySummary"></div>
 
       <div class="section-head" style="margin-top: 30px;">
@@ -63,34 +62,14 @@
       <div id="customerTable" class="table-wrap"></div>
     </section>
 
-    <!-- Sales -->
-    <section id="sales" class="view">
-      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานขาย</h1><p>ติดตามรายการขายตราชั่งและสถานะการส่งมอบ</p></div></div>
+    <!-- All Jobs -->
+    <section id="jobs" class="view">
+      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1 id="jobsTitle">งานทั้งหมด</h1><p>รวมงานขาย งานติดตั้ง และงานซ่อมไว้ในรายการเดียว</p></div></div>
       <div class="search-row">
-        <div class="search">🔍 <input id="salesSearch" placeholder="ค้นหางานขาย..." oninput="renderJobs('ขาย', 'salesTable', 'filterProvSales', 'salesSearch')"></div>
-        <select id="filterProvSales" class="filter-select" onchange="renderJobs('ขาย', 'salesTable', 'filterProvSales', 'salesSearch')"><option value="all">ทุกจังหวัด</option></select>
+        <div class="search">🔍 <input id="jobsSearch" placeholder="ค้นหาชื่องาน ลูกค้า หรือเลขที่งาน..." oninput="renderJobs()"></div>
+        <select id="filterProvJobs" class="filter-select" onchange="renderJobs()"><option value="all">ทุกจังหวัด</option></select>
       </div>
-      <div id="salesTable" class="table-wrap"></div>
-    </section>
-
-    <!-- Install -->
-    <section id="install" class="view">
-      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานติดตั้ง</h1><p>ติดตามคิวติดตั้งและทีมช่าง</p></div></div>
-      <div class="search-row">
-        <div class="search">🔍 <input id="installSearch" placeholder="ค้นหางานติดตั้ง..." oninput="renderJobs('ติดตั้ง', 'installTable', 'filterProvInstall', 'installSearch')"></div>
-        <select id="filterProvInstall" class="filter-select" onchange="renderJobs('ติดตั้ง', 'installTable', 'filterProvInstall', 'installSearch')"><option value="all">ทุกจังหวัด</option></select>
-      </div>
-      <div id="installTable" class="table-wrap"></div>
-    </section>
-
-    <!-- Repair -->
-    <section id="repair" class="view">
-      <div class="hero compact"><div><p class="eyebrow">งาน</p><h1>งานซ่อม</h1><p>ติดตามงานแจ้งซ่อมและสถานะงาน</p></div></div>
-      <div class="search-row">
-        <div class="search">🔍 <input id="repairSearch" placeholder="ค้นหางานซ่อม..." oninput="renderJobs('ซ่อม', 'repairTable', 'filterProvRepair', 'repairSearch')"></div>
-        <select id="filterProvRepair" class="filter-select" onchange="renderJobs('ซ่อม', 'repairTable', 'filterProvRepair', 'repairSearch')"><option value="all">ทุกจังหวัด</option></select>
-      </div>
-      <div id="repairTable" class="table-wrap"></div>
+      <div id="jobsTable" class="table-wrap"></div>
     </section>
 
     <!-- Customer Detail -->
