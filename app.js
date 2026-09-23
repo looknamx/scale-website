@@ -31,6 +31,8 @@ let detailYear = "all";
 let pendingDeleteCustomer = null; 
 let detailReturnView = "customers";
 let editingEntryId = null;
+let expandedBillKey = null;
+let visibleBillKeys = [];
 
 const titles = {
   dashboard: "แดชบอร์ดงาน",
@@ -278,6 +280,7 @@ function openDetail(province, idx) {
   if (activeView && activeView.id !== "customerDetail") detailReturnView = activeView.id;
   currentDetail = { province, index: idx };
   detailYear = "all"; 
+  expandedBillKey = null;
   showView("customerDetail");
 }
 
@@ -312,30 +315,43 @@ function renderDetail() {
 
   const filteredEntries = filterEntriesByYear(entries, detailYear);
   const totalPrice = filteredEntries.reduce((s, e) => s + (Number(e.price) || 0), 0);
+  const billGroups = [];
+  filteredEntries.forEach(entry => {
+    const billKey = entry.bill || "-";
+    let group = billGroups.find(item => item.key === billKey);
+    if (!group) {
+      group = { key: billKey, entries: [], total: 0 };
+      billGroups.push(group);
+    }
+    group.entries.push({ entry, originalIdx: entries.indexOf(entry) });
+    group.total += Number(entry.price) || 0;
+  });
+  visibleBillKeys = billGroups.map(group => group.key);
 
   document.getElementById("detailSummary").innerHTML = '<div class="detail-summary">' +
     '<div class="detail-card"><small>ประเภทงาน</small><strong>' + type + '</strong></div>' +
-    '<div class="detail-card"><small>จำนวนรายการ (' + (detailYear==="all"?"รวม":"ปี "+getThaiYear(detailYear)) + ')</small><strong>' + filteredEntries.length + ' รายการ</strong></div>' +
+    '<div class="detail-card"><small>จำนวนเล่มบิล (' + (detailYear==="all"?"รวม":"ปี "+getThaiYear(detailYear)) + ')</small><strong>' + billGroups.length + ' เล่ม</strong></div>' +
     '<div class="detail-card"><small>ยอดรวม (' + (detailYear==="all"?"รวม":"ปี "+getThaiYear(detailYear)) + ')</small><strong class="price">฿' + formatPrice(totalPrice) + '</strong></div>' +
     '</div>';
 
   let html = '';
   if (filteredEntries.length) {
-    html += '<div class="table-wrap"><table class="table"><thead><tr>' +
-      '<th>วันที่</th><th>เล่มบิล</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th></th>' +
-      '</tr></thead><tbody>';
-    
-    entries.forEach((e, originalIdx) => {
-      if (detailYear !== "all" && getYearFromDate(e.date) !== detailYear) return;
-      html += '<tr>' +
-        '<td>' + formatDate(e.date) + '</td>' +
-        '<td>' + e.bill + '</td>' +
-        '<td><b>' + e.desc + '</b></td>' +
-        '<td>' + (e.quantity || 1) + '</td>' +
-        '<td style="color:var(--primary);font-weight:700">฿' + formatPrice(e.price) + '</td>' +
-        '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td>' +
-        '<td><div class="row-actions"><button class="edit-btn" onclick="openEditEntry(' + originalIdx + ')">✏️ แก้ไข</button><button class="danger-btn" onclick="confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></div></td>' +
-        '</tr>';
+    html += '<div class="table-wrap"><table class="table bill-table"><thead><tr><th>เล่มบิล</th><th>ยอดรวมของบิล</th><th></th></tr></thead><tbody>';
+    billGroups.forEach((group, groupIdx) => {
+      const isOpen = expandedBillKey === group.key;
+      html += '<tr class="bill-row" onclick="toggleBillGroup(' + groupIdx + ')">' +
+        '<td><b>' + escapeHtml(group.key) + '</b><small>' + group.entries.length + ' รายการ</small></td>' +
+        '<td class="bill-total">฿' + formatPrice(group.total) + '</td>' +
+        '<td class="bill-toggle">' + (isOpen ? '▲' : '▼') + '</td></tr>';
+      if (!isOpen) return;
+      html += '<tr class="bill-detail-row"><td colspan="3"><div class="bill-items"><table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th></th></tr></thead><tbody>';
+      group.entries.forEach(({ entry: e, originalIdx }) => {
+        html += '<tr><td>' + formatDate(e.date) + '</td><td><b>' + escapeHtml(e.desc) + '</b></td>' +
+          '<td>' + (e.quantity || 1) + '</td><td class="item-price">฿' + formatPrice(e.price) + '</td>' +
+          '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td>' +
+          '<td><div class="row-actions"><button class="edit-btn" onclick="event.stopPropagation();openEditEntry(' + originalIdx + ')">✏️ แก้ไข</button><button class="danger-btn" onclick="event.stopPropagation();confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></div></td></tr>';
+      });
+      html += '</tbody></table></div></td></tr>';
     });
     html += '</tbody></table></div>';
   } else {
@@ -343,6 +359,12 @@ function renderDetail() {
   }
 
   document.getElementById("detailTable").innerHTML = html;
+}
+
+function toggleBillGroup(groupIdx) {
+  const key = visibleBillKeys[groupIdx];
+  expandedBillKey = expandedBillKey === key ? null : key;
+  renderDetail();
 }
 
 function goBackFromDetail() {

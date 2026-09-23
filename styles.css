@@ -59,6 +59,18 @@ button, input, select, textarea { font: inherit; }
 .status-inactive { color: #9aa3b1; font-weight: 700; }
 .row-actions { display: flex; gap: 6px; white-space: nowrap; }
 .edit-btn { border: 0; background: #eef4ff; color: #2f66b1; border-radius: 7px; padding: 7px 9px; cursor: pointer; font-size: 11px; }
+.bill-row { cursor: pointer; }
+.bill-row td { padding-top: 17px; padding-bottom: 17px; }
+.bill-row:hover { background: var(--primary-bg) !important; }
+.bill-row small { display: block; margin-top: 3px; color: var(--muted); font-weight: 400; }
+.bill-total { color: var(--primary); font-size: 14px !important; font-weight: 700; }
+.bill-toggle { width: 45px; text-align: center !important; color: var(--muted); }
+.bill-detail-row > td { padding: 0 !important; background: #fafbfd; }
+.bill-items { padding: 10px 18px 18px; overflow-x: auto; }
+.bill-items table { width: 100%; border-collapse: collapse; }
+.bill-items th, .bill-items td { padding: 10px 9px; border-bottom: 1px solid var(--line); font-size: 11px; text-align: left; }
+.bill-items th { color: var(--muted); font-size: 9px; }
+.bill-items .item-price { color: var(--primary); font-weight: 700; }
 
 /* ===== Layout ===== */
 .app { display: flex; min-height: 100vh; }
