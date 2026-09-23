@@ -474,7 +474,7 @@ function addEntryItemRow(item = null) {
   row.innerHTML = `
     <div class="entry-item-top">
       <label>รายละเอียด<input class="entry-item-desc" placeholder="เช่น ตราชั่ง 100 ตัน" oninput="updateEntryTotals()"></label>
-      <label>จำนวน<input class="entry-item-qty" type="number" min="1" value="1" oninput="updateEntryTotals()"></label>
+      <label>จำนวน<input class="entry-item-qty" type="number" min="0.001" step="0.001" value="1" oninput="updateEntryTotals()"></label>
       <button type="button" class="entry-remove" title="ลบรายการ" onclick="removeEntryItemRow(this)">×</button>
     </div>
     <div class="entry-item-bottom">
@@ -502,7 +502,7 @@ function removeEntryItemRow(button) {
 
 function getEntryFormItems() {
   return Array.from(document.querySelectorAll(".entry-item-row")).map(row => {
-    const quantity = Math.max(1, Number(row.querySelector(".entry-item-qty").value) || 1);
+    const quantity = Math.max(0.001, Number(row.querySelector(".entry-item-qty").value) || 1);
     const unitPrice = Math.max(0, Number(row.querySelector(".entry-item-price").value) || 0);
     const hasVat = row.querySelector(".entry-item-vat").checked;
     return {
