@@ -7,7 +7,19 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="app">
+<div id="loginScreen" class="login-screen">
+  <form class="login-card" onsubmit="login(event)">
+    <div class="login-mark">⚖</div>
+    <h1>เข้าสู่ระบบจัดการงาน</h1>
+    <p>ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510)</p>
+    <label>อีเมล<input id="loginEmail" type="email" autocomplete="username" required></label>
+    <label>รหัสผ่าน<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+    <p id="loginError" class="login-error"></p>
+    <button id="loginButton" class="primary full" type="submit">เข้าสู่ระบบ</button>
+  </form>
+</div>
+
+<div class="app auth-hidden" id="appShell">
   <aside class="sidebar">
     <div class="brand"><div class="brand-mark">⚖</div><div><b>ง่วนเฮงหลี สเกล</b><span>แอนด์ ซีสเท็ม (2510)</span></div></div>
     <div class="shop-select"><span>ระบบจัดการงาน</span><small>ขาย / ติดตั้ง / ซ่อม</small><b>▾</b></div>
@@ -32,7 +44,7 @@
           <label>ปี:</label>
           <select id="globalYear" onchange="onGlobalYearChange()"></select>
         </div>
-        <div class="avatar">B</div>
+        <button class="avatar avatar-button" id="userButton" onclick="logout()" title="ออกจากระบบ">B</button>
       </div>
     </header>
 
@@ -156,6 +168,9 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <script src="app.js"></script>
+<script src="supabase-sync.js"></script>
 </body>
 </html>
