@@ -71,6 +71,15 @@ button, input, select, textarea { font: inherit; }
 .bill-items th, .bill-items td { padding: 10px 9px; border-bottom: 1px solid var(--line); font-size: 11px; text-align: left; }
 .bill-items th { color: var(--muted); font-size: 9px; }
 .bill-items .item-price { color: var(--primary); font-weight: 700; }
+.import-modal-card { width: min(900px, 96vw); }
+.import-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.import-summary div { padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #fafbfd; }
+.import-summary small { display: block; color: var(--muted); }
+.import-summary strong { font-size: 17px; }
+.import-preview { max-height: 390px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.import-preview:empty { display: none; }
+.import-preview table { min-width: 780px; }
+.import-warning { color: #c77812; }
 
 /* ===== Layout ===== */
 .app { display: flex; min-height: 100vh; }

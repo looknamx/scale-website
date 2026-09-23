@@ -33,6 +33,8 @@ let detailReturnView = "customers";
 let editingEntryId = null;
 let expandedBillKey = null;
 let visibleBillKeys = [];
+let pendingImportRows = [];
+let pendingImportWarnings = [];
 
 const titles = {
   dashboard: "แดชบอร์ดงาน",
@@ -344,11 +346,11 @@ function renderDetail() {
         '<td class="bill-total">฿' + formatPrice(group.total) + '</td>' +
         '<td class="bill-toggle">' + (isOpen ? '▲' : '▼') + '</td></tr>';
       if (!isOpen) return;
-      html += '<tr class="bill-detail-row"><td colspan="3"><div class="bill-items"><table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th></th></tr></thead><tbody>';
+      html += '<tr class="bill-detail-row"><td colspan="3"><div class="bill-items"><table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
       group.entries.forEach(({ entry: e, originalIdx }) => {
         html += '<tr><td>' + formatDate(e.date) + '</td><td><b>' + escapeHtml(e.desc) + '</b></td>' +
           '<td>' + (e.quantity || 1) + '</td><td class="item-price">฿' + formatPrice(e.price) + '</td>' +
-          '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td>' +
+          '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td><td>' + escapeHtml(e.notes || '-') + '</td>' +
           '<td><div class="row-actions"><button class="edit-btn" onclick="event.stopPropagation();openEditEntry(' + originalIdx + ')">✏️ แก้ไข</button><button class="danger-btn" onclick="event.stopPropagation();confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></div></td></tr>';
       });
       html += '</tbody></table></div></td></tr>';
@@ -439,6 +441,7 @@ function openAddEntry() {
   document.getElementById("saveEntryButton").textContent = "บันทึกรายการ";
   document.getElementById("entryDate").value = isoToBuddhistInput(new Date().toISOString().split("T")[0]);
   document.getElementById("entryBill").value = "";
+  document.getElementById("entryNotes").value = "";
   document.getElementById("entryItems").innerHTML = "";
   addEntryItemRow();
   updateEntryTotals();
@@ -455,6 +458,7 @@ function openEditEntry(entryIdx) {
   document.getElementById("entryModalSub").textContent = "แก้ไขรายการของ " + cust[0];
   document.getElementById("entryDate").value = isoToBuddhistInput(entry.date);
   document.getElementById("entryBill").value = entry.bill === "-" ? "" : entry.bill;
+  document.getElementById("entryNotes").value = entry.notes || "";
   document.getElementById("entryItems").innerHTML = "";
   document.getElementById("addEntryItemButton").classList.add("hidden");
   document.getElementById("saveEntryButton").textContent = "บันทึกการแก้ไข";
@@ -539,6 +543,109 @@ function updateEntryTotals() {
 function closeEntryModal() {
   document.getElementById("entryModal").classList.remove("open");
   editingEntryId = null;
+}
+
+function openImportModal() {
+  if (!currentDetail) return;
+  pendingImportRows = [];
+  pendingImportWarnings = [];
+  document.getElementById("importFile").value = "";
+  document.getElementById("importSummary").innerHTML = "";
+  document.getElementById("importPreview").innerHTML = "";
+  document.getElementById("importError").textContent = "";
+  document.getElementById("confirmImportButton").classList.add("hidden");
+  document.getElementById("importModal").classList.add("open");
+}
+
+function closeImportModal() {
+  document.getElementById("importModal").classList.remove("open");
+  pendingImportRows = [];
+}
+
+function excelDateToIso(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  if (typeof value === "number") {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (!parsed) return null;
+    return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
+  }
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (!match) return null;
+  let year = Number(match[3]);
+  if (year > 2400) year -= 543;
+  if (year < 100) year += year > 50 ? 1900 : 2000;
+  const iso = `${year}-${String(Number(match[2])).padStart(2, "0")}-${String(Number(match[1])).padStart(2, "0")}`;
+  return buddhistInputToIso(isoToBuddhistInput(iso)) ? iso : null;
+}
+
+async function previewExcelImport(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const errorBox = document.getElementById("importError");
+  errorBox.textContent = "";
+  try {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+    const rows = [];
+    const warnings = [];
+    workbook.SheetNames.forEach(sheetName => {
+      const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: true, defval: "" });
+      let currentDate = null;
+      let billCounter = 0;
+      let currentBill = "";
+      sheetRows.slice(2).forEach((row, offset) => {
+        const sourceRow = offset + 3;
+        const dateCell = row[0];
+        if (dateCell !== "" && dateCell !== null) {
+          const parsedDate = excelDateToIso(dateCell);
+          if (parsedDate) {
+            currentDate = parsedDate;
+            billCounter += 1;
+            currentBill = `IMP-${String(sheetName).replace(/[^0-9A-Za-zก-๙_-]/g, "").slice(0, 12) || "DATA"}-${String(billCounter).padStart(3, "0")}`;
+          } else {
+            currentDate = null;
+            currentBill = "";
+            warnings.push(`ชีต ${sheetName} แถว ${sourceRow}: วันที่ไม่ถูกต้อง (${dateCell})`);
+          }
+        }
+        const quantity = Number(row[1]);
+        const description = String(row[2] || "").trim();
+        const unitPrice = Number(row[3]);
+        if (!description || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0) return;
+        if (!currentDate) {
+          warnings.push(`ชีต ${sheetName} แถว ${sourceRow}: ข้ามรายการเพราะไม่มีวันที่`);
+          return;
+        }
+        const notes = [row[5], row[6]].map(value => String(value || "").trim()).filter(Boolean).join(" | ");
+        const expectedTotal = quantity * unitPrice;
+        const excelTotal = Number(row[4]);
+        if (Number.isFinite(excelTotal) && Math.abs(excelTotal - expectedTotal) > 0.01) {
+          warnings.push(`ชีต ${sheetName} แถว ${sourceRow}: ยอดรวมใน Excel ไม่ตรงกับจำนวน × ราคา`);
+        }
+        rows.push({ entryDate: currentDate, billNo: currentBill, description, quantity, unitPrice, hasVat: false, notes, sourceSheet: sheetName, sourceRow });
+      });
+    });
+    const cust = currentDetail ? data[currentDetail.province]?.[currentDetail.index] : null;
+    const existingBills = new Set((cust?.[4] || []).map(entry => entry.bill));
+    const duplicateBills = new Set(rows.filter(row => existingBills.has(row.billNo)).map(row => row.billNo));
+    duplicateBills.forEach(bill => warnings.push(`ข้ามเล่มบิล ${bill} เพราะเคยนำเข้าแล้ว`));
+    pendingImportRows = rows.filter(row => !duplicateBills.has(row.billNo));
+    pendingImportWarnings = warnings;
+    renderImportPreview();
+  } catch (error) {
+    pendingImportRows = [];
+    errorBox.textContent = "อ่านไฟล์ไม่สำเร็จ: " + error.message;
+  }
+}
+
+function renderImportPreview() {
+  const bills = new Set(pendingImportRows.map(row => row.billNo));
+  const total = pendingImportRows.reduce((sum, row) => sum + row.quantity * row.unitPrice, 0);
+  document.getElementById("importSummary").innerHTML = `<div><small>เล่มบิล</small><strong>${bills.size}</strong></div><div><small>รายการ</small><strong>${pendingImportRows.length}</strong></div><div><small>ยอดรวม</small><strong>฿${formatPrice(total)}</strong></div>`;
+  const preview = pendingImportRows.slice(0, 200).map(row => `<tr><td>${isoToBuddhistInput(row.entryDate)}</td><td>${escapeHtml(row.billNo)}</td><td>${escapeHtml(row.description)}</td><td>${row.quantity}</td><td>฿${formatPrice(row.unitPrice)}</td><td>${escapeHtml(row.notes || "-")}</td></tr>`).join("");
+  const warningHtml = pendingImportWarnings.length ? `<div class="import-warning">พบคำเตือน ${pendingImportWarnings.length} รายการ:<br>${pendingImportWarnings.slice(0, 10).map(escapeHtml).join("<br>")}${pendingImportWarnings.length > 10 ? "<br>..." : ""}</div>` : "";
+  document.getElementById("importPreview").innerHTML = warningHtml + (pendingImportRows.length ? `<table class="table"><thead><tr><th>วันที่</th><th>เล่มบิล</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>หมายเหตุ</th></tr></thead><tbody>${preview}</tbody></table>` : '<div class="empty">ไม่พบรายการที่นำเข้าได้</div>');
+  document.getElementById("confirmImportButton").classList.toggle("hidden", !pendingImportRows.length);
 }
 
 function saveEntry() {

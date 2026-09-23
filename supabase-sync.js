@@ -209,6 +209,7 @@ function rebuildData(rows) {
         unitPrice: Number(entry.price),
         quantity: Number(entry.quantity) || 1,
         hasVat: Boolean(entry.has_vat),
+        notes: entry.notes || "",
         price: Number(entry.price) * (Number(entry.quantity) || 1) * (entry.has_vat ? 1.07 : 1),
         bill: entry.bill_no
       }))
@@ -234,7 +235,7 @@ async function loadData() {
   const detailId = currentCustomerId();
   const { data: rows, error } = await dbClient
     .from("customers")
-    .select("id,name,phone,job_type,job_no,address,province,created_year,created_at,job_entries(id,entry_date,description,price,quantity,has_vat,bill_no)")
+    .select("id,name,phone,job_type,job_no,address,province,created_year,created_at,job_entries(id,entry_date,description,price,quantity,has_vat,bill_no,notes)")
     .order("created_at", { ascending: true });
   loadingData = false;
   if (error) {
@@ -323,6 +324,7 @@ saveEntry = async function () {
   const entryDate = buddhistInputToIso(document.getElementById("entryDate").value);
   if (!entryDate) return alert("กรุณาใส่วันที่เป็น วัน/เดือน/พ.ศ. เช่น 23/09/2569");
   const billNo = document.getElementById("entryBill").value.trim() || "-";
+  const notes = document.getElementById("entryNotes").value.trim();
 
   if (editingEntryId !== null) {
     const item = items[0];
@@ -332,7 +334,8 @@ saveEntry = async function () {
       price: item.unitPrice,
       quantity: item.quantity,
       has_vat: item.hasVat,
-      bill_no: billNo
+      bill_no: billNo,
+      notes
     }).eq("id", editingEntryId);
     if (error) return alert("แก้ไขรายการไม่สำเร็จ: " + error.message);
     closeEntryModal();
@@ -348,7 +351,8 @@ saveEntry = async function () {
     price: item.unitPrice,
     quantity: item.quantity,
     has_vat: item.hasVat,
-    bill_no: billNo
+    bill_no: billNo,
+    notes
   }));
   const { error } = await dbClient.from("job_entries").insert(payload);
   if (error) return alert("เพิ่มรายการไม่สำเร็จ: " + error.message);
@@ -356,6 +360,40 @@ saveEntry = async function () {
   await loadData();
   alert("เพิ่มรายการเรียบร้อยแล้ว");
 };
+
+async function confirmExcelImport() {
+  if (!currentDetail || !pendingImportRows.length) return;
+  const customer = data[currentDetail.province][currentDetail.index];
+  const button = document.getElementById("confirmImportButton");
+  button.disabled = true;
+  button.textContent = "กำลังนำเข้า...";
+  document.getElementById("importError").textContent = "";
+  try {
+    const payload = pendingImportRows.map(row => ({
+      customer_id: customer[7],
+      entry_date: row.entryDate,
+      description: row.description,
+      price: row.unitPrice,
+      quantity: row.quantity,
+      has_vat: false,
+      bill_no: row.billNo,
+      notes: row.notes
+    }));
+    for (let index = 0; index < payload.length; index += 500) {
+      const { error } = await dbClient.from("job_entries").insert(payload.slice(index, index + 500));
+      if (error) throw error;
+    }
+    const importedCount = payload.length;
+    closeImportModal();
+    await loadData();
+    alert(`นำเข้าสำเร็จ ${importedCount} รายการ`);
+  } catch (error) {
+    document.getElementById("importError").textContent = "นำเข้าไม่สำเร็จ: " + error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "ยืนยันนำเข้าข้อมูล";
+  }
+}
 
 executeDeleteEntry = async function () {
   if (!currentDetail || pendingDeleteIdx === null) return;
