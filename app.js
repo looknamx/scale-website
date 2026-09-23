@@ -437,7 +437,7 @@ function openAddEntry() {
   document.getElementById("entryModalSub").textContent = "เพิ่มรายการให้ " + cust[0];
   document.getElementById("addEntryItemButton").classList.remove("hidden");
   document.getElementById("saveEntryButton").textContent = "บันทึกรายการ";
-  document.getElementById("entryDate").value = new Date().toISOString().split("T")[0];
+  document.getElementById("entryDate").value = isoToBuddhistInput(new Date().toISOString().split("T")[0]);
   document.getElementById("entryBill").value = "";
   document.getElementById("entryItems").innerHTML = "";
   addEntryItemRow();
@@ -453,7 +453,7 @@ function openEditEntry(entryIdx) {
   editingEntryId = entry.id;
   document.getElementById("entryModalTitle").textContent = "แก้ไขรายการ";
   document.getElementById("entryModalSub").textContent = "แก้ไขรายการของ " + cust[0];
-  document.getElementById("entryDate").value = entry.date || "";
+  document.getElementById("entryDate").value = isoToBuddhistInput(entry.date);
   document.getElementById("entryBill").value = entry.bill === "-" ? "" : entry.bill;
   document.getElementById("entryItems").innerHTML = "";
   document.getElementById("addEntryItemButton").classList.add("hidden");
@@ -509,6 +509,23 @@ function getEntryFormItems() {
       total: quantity * unitPrice * (hasVat ? 1.07 : 1)
     };
   });
+}
+
+function isoToBuddhistInput(isoDate) {
+  const match = String(isoDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  return `${match[3]}/${match[2]}/${Number(match[1]) + 543}`;
+}
+
+function buddhistInputToIso(value) {
+  const match = String(value || "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const christianYear = Number(match[3]) - 543;
+  const date = new Date(Date.UTC(christianYear, month - 1, day));
+  if (christianYear < 1900 || date.getUTCFullYear() !== christianYear || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return `${christianYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function updateEntryTotals() {

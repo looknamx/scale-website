@@ -320,7 +320,8 @@ saveEntry = async function () {
   const items = getEntryFormItems();
   if (items.some(item => !item.description)) return alert("กรุณาใส่รายละเอียดให้ครบทุกรายการ");
   if (items.some(item => item.unitPrice <= 0)) return alert("กรุณาใส่ราคาให้ครบทุกรายการ");
-  const entryDate = document.getElementById("entryDate").value || new Date().toISOString().slice(0, 10);
+  const entryDate = buddhistInputToIso(document.getElementById("entryDate").value);
+  if (!entryDate) return alert("กรุณาใส่วันที่เป็น วัน/เดือน/พ.ศ. เช่น 23/09/2569");
   const billNo = document.getElementById("entryBill").value.trim() || "-";
 
   if (editingEntryId !== null) {
