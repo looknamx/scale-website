@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด • ระบบจัดการงาน</title>
-<link rel="stylesheet" href="styles.css?v=5.1">
+<link rel="stylesheet" href="styles.css?v=5.2">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -12,7 +12,7 @@
     <div class="login-mark">⚖</div>
     <h1>เข้าสู่ระบบจัดการงาน</h1>
     <p>ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510)</p>
-    <label>อีเมล<input id="loginEmail" type="email" autocomplete="username" required></label>
+    <label>ชื่อผู้ใช้<input id="loginUsername" type="text" autocomplete="username" autocapitalize="none" required></label>
     <label>รหัสผ่าน<input id="loginPassword" type="password" autocomplete="current-password" required></label>
     <p id="loginError" class="login-error"></p>
     <button id="loginButton" class="primary full" type="submit">เข้าสู่ระบบ</button>
@@ -32,8 +32,9 @@
       <div id="sidebarYearList" class="sidebar-year-list"></div>
       <div class="nav-label">จัดการ</div>
       <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span><em id="customerBadge">0</em></button>
+      <button class="nav-item admin-only hidden" data-view="users">🔐 <span>ผู้ใช้งานระบบ</span></button>
     </nav>
-    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v5.1</small></div>
+    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v5.2</small></div>
   </aside>
 
   <main class="main">
@@ -84,6 +85,15 @@
       <div id="jobsTable" class="table-wrap"></div>
     </section>
 
+    <!-- User management (admin only) -->
+    <section id="users" class="view">
+      <div class="hero compact">
+        <div><p class="eyebrow">ผู้ดูแลระบบ</p><h1>ผู้ใช้งานระบบ</h1><p>เพิ่มผู้ใช้ กำหนดสิทธิ์ และปิดบัญชีที่ไม่ต้องการใช้งาน</p></div>
+        <button class="primary" onclick="openAddUser()">+ เพิ่มผู้ใช้งาน</button>
+      </div>
+      <div id="usersTable" class="table-wrap"></div>
+    </section>
+
     <!-- Customer Detail -->
     <section id="customerDetail" class="view">
       <div class="hero compact">
@@ -104,6 +114,34 @@
       <div id="detailTable" class="table-wrap"></div>
     </section>
   </main>
+</div>
+
+<!-- Modal: Add User -->
+<div id="userModal" class="modal">
+  <form class="modal-card" onsubmit="createUser(event)">
+    <button class="modal-close" type="button" onclick="closeUserModal()">×</button>
+    <h2>เพิ่มผู้ใช้งาน</h2>
+    <p>ผู้ใช้จะเข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่านนี้</p>
+    <label>ชื่อผู้ใช้<input id="newUsername" autocomplete="off" autocapitalize="none" pattern="[A-Za-z0-9._-]{3,32}" minlength="3" maxlength="32" required placeholder="เช่น somchai"></label>
+    <label>ชื่อที่แสดง<input id="newDisplayName" maxlength="80" required placeholder="เช่น สมชาย ใจดี"></label>
+    <label>สิทธิ์<select id="newUserRole"><option value="staff">พนักงาน</option><option value="admin">ผู้ดูแลระบบ</option></select></label>
+    <label>รหัสผ่าน<input id="newUserPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p id="userFormError" class="form-error"></p>
+    <button id="createUserButton" class="primary full" type="submit">สร้างบัญชี</button>
+  </form>
+</div>
+
+<!-- Modal: Reset Password -->
+<div id="passwordModal" class="modal">
+  <form class="modal-card" onsubmit="resetUserPassword(event)">
+    <button class="modal-close" type="button" onclick="closePasswordModal()">×</button>
+    <h2>ตั้งรหัสผ่านใหม่</h2>
+    <p id="passwordModalSub"></p>
+    <input id="passwordUserId" type="hidden">
+    <label>รหัสผ่านใหม่<input id="resetPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p id="passwordFormError" class="form-error"></p>
+    <button id="resetPasswordButton" class="primary full" type="submit">บันทึกรหัสผ่านใหม่</button>
+  </form>
 </div>
 
 <!-- Modal: Add Customer -->
@@ -173,8 +211,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.1"></script>
-<script src="app.js?v=5.1"></script>
-<script src="supabase-sync.js?v=5.1"></script>
+<script src="supabase-config.js?v=5.2"></script>
+<script src="app.js?v=5.2"></script>
+<script src="supabase-sync.js?v=5.2"></script>
 </body>
 </html>

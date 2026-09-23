@@ -35,6 +35,7 @@ const titles = {
   dashboard: "แดชบอร์ดงาน",
   customers: "ลูกค้าทั้งหมด",
   jobs: "งานทั้งหมด",
+  users: "ผู้ใช้งานระบบ",
   customerDetail: "รายละเอียดลูกค้า"
 };
 
@@ -558,6 +559,7 @@ function showView(id) {
   if (id === "customers") renderCustomers();
   if (id === "jobs") renderJobs();
   if (id === "customerDetail") renderDetail();
+  if (id === "users" && typeof loadUsers === "function") loadUsers();
   window.scrollTo(0, 0);
 }
 
