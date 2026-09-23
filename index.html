@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>บริษัท ง่วนเฮงหลี สเกล แอนด์ ซีสเท็ม (2510) จำกัด • ระบบจัดการงาน</title>
-<link rel="stylesheet" href="styles.css?v=5.2">
+<link rel="stylesheet" href="styles.css?v=5.3">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -34,7 +34,7 @@
       <button class="nav-item" data-view="customers">👤 <span>ลูกค้าทั้งหมด</span><em id="customerBadge">0</em></button>
       <button class="nav-item admin-only hidden" data-view="users">🔐 <span>ผู้ใช้งานระบบ</span></button>
     </nav>
-    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v5.2</small></div>
+    <div class="sidebar-foot">บริษัท ง่วนเฮงหลี สเกล<br>แอนด์ ซีสเท็ม (2510) จำกัด<br><small>Back Office • v5.3</small></div>
   </aside>
 
   <main class="main">
@@ -184,17 +184,17 @@
 <div id="entryModal" class="modal">
   <div class="modal-card">
     <button class="modal-close" onclick="closeEntryModal()">×</button>
-    <h2>เพิ่มรายการ</h2>
+    <h2 id="entryModalTitle">เพิ่มรายการ</h2>
     <p id="entryModalSub">เพิ่มรายการซื้อ/ซ่อมของลูกค้า</p>
     <label>วันที่<input id="entryDate" type="date"></label>
     <label>เล่มบิล<input id="entryBill" placeholder="เช่น BL-001"></label>
     <div class="entry-items-head">
       <b>รายการในบิล</b>
-      <button type="button" class="text-btn" onclick="addEntryItemRow()">+ เพิ่มรายการ</button>
+      <button id="addEntryItemButton" type="button" class="text-btn" onclick="addEntryItemRow()">+ เพิ่มรายการ</button>
     </div>
     <div id="entryItems" class="entry-items"></div>
     <div class="entry-grand-total"><span>ยอดรวมทั้งบิล</span><strong id="entryGrandTotal">฿0</strong></div>
-    <button class="primary full" onclick="saveEntry()">บันทึกรายการ</button>
+    <button id="saveEntryButton" class="primary full" onclick="saveEntry()">บันทึกรายการ</button>
   </div>
 </div>
 
@@ -211,8 +211,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.2"></script>
-<script src="app.js?v=5.2"></script>
-<script src="supabase-sync.js?v=5.2"></script>
+<script src="supabase-config.js?v=5.3"></script>
+<script src="app.js?v=5.3"></script>
+<script src="supabase-sync.js?v=5.3"></script>
 </body>
 </html>

@@ -57,6 +57,8 @@ button, input, select, textarea { font: inherit; }
 .user-actions .danger { color: #c62828; }
 .status-active { color: #15945b; font-weight: 700; }
 .status-inactive { color: #9aa3b1; font-weight: 700; }
+.row-actions { display: flex; gap: 6px; white-space: nowrap; }
+.edit-btn { border: 0; background: #eef4ff; color: #2f66b1; border-radius: 7px; padding: 7px 9px; cursor: pointer; font-size: 11px; }
 
 /* ===== Layout ===== */
 .app { display: flex; min-height: 100vh; }

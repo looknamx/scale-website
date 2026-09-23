@@ -30,6 +30,7 @@ let globalYear = "all";
 let detailYear = "all"; 
 let pendingDeleteCustomer = null; 
 let detailReturnView = "customers";
+let editingEntryId = null;
 
 const titles = {
   dashboard: "แดชบอร์ดงาน",
@@ -333,7 +334,7 @@ function renderDetail() {
         '<td>' + (e.quantity || 1) + '</td>' +
         '<td style="color:var(--primary);font-weight:700">฿' + formatPrice(e.price) + '</td>' +
         '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td>' +
-        '<td><button class="danger-btn" onclick="confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></td>' +
+        '<td><div class="row-actions"><button class="edit-btn" onclick="openEditEntry(' + originalIdx + ')">✏️ แก้ไข</button><button class="danger-btn" onclick="confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></div></td>' +
         '</tr>';
     });
     html += '</tbody></table></div>';
@@ -408,8 +409,12 @@ function executeDeleteCustomer() {
 /* ===== Add Entry Modal ===== */
 function openAddEntry() {
   if (!currentDetail) return;
+  editingEntryId = null;
   const cust = data[currentDetail.province][currentDetail.index];
+  document.getElementById("entryModalTitle").textContent = "เพิ่มรายการ";
   document.getElementById("entryModalSub").textContent = "เพิ่มรายการให้ " + cust[0];
+  document.getElementById("addEntryItemButton").classList.remove("hidden");
+  document.getElementById("saveEntryButton").textContent = "บันทึกรายการ";
   document.getElementById("entryDate").value = new Date().toISOString().split("T")[0];
   document.getElementById("entryBill").value = "";
   document.getElementById("entryItems").innerHTML = "";
@@ -418,7 +423,25 @@ function openAddEntry() {
   document.getElementById("entryModal").classList.add("open");
 }
 
-function addEntryItemRow() {
+function openEditEntry(entryIdx) {
+  if (!currentDetail) return;
+  const cust = data[currentDetail.province][currentDetail.index];
+  const entry = cust[4]?.[entryIdx];
+  if (!entry) return;
+  editingEntryId = entry.id;
+  document.getElementById("entryModalTitle").textContent = "แก้ไขรายการ";
+  document.getElementById("entryModalSub").textContent = "แก้ไขรายการของ " + cust[0];
+  document.getElementById("entryDate").value = entry.date || "";
+  document.getElementById("entryBill").value = entry.bill === "-" ? "" : entry.bill;
+  document.getElementById("entryItems").innerHTML = "";
+  document.getElementById("addEntryItemButton").classList.add("hidden");
+  document.getElementById("saveEntryButton").textContent = "บันทึกการแก้ไข";
+  addEntryItemRow(entry);
+  updateEntryTotals();
+  document.getElementById("entryModal").classList.add("open");
+}
+
+function addEntryItemRow(item = null) {
   const row = document.createElement("div");
   row.className = "entry-item-row";
   row.innerHTML = `
@@ -434,6 +457,13 @@ function addEntryItemRow() {
     <div class="entry-line-total">รวมรายการ ฿0</div>
   `;
   document.getElementById("entryItems").appendChild(row);
+  if (item) {
+    row.querySelector(".entry-item-desc").value = item.desc || "";
+    row.querySelector(".entry-item-qty").value = item.quantity || 1;
+    row.querySelector(".entry-item-price").value = Number(item.unitPrice) || 0;
+    row.querySelector(".entry-item-vat").checked = Boolean(item.hasVat);
+    row.querySelector(".entry-remove").classList.add("hidden");
+  }
 }
 
 function removeEntryItemRow(button) {
@@ -469,6 +499,7 @@ function updateEntryTotals() {
 
 function closeEntryModal() {
   document.getElementById("entryModal").classList.remove("open");
+  editingEntryId = null;
 }
 
 function saveEntry() {

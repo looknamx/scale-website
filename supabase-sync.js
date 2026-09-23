@@ -322,6 +322,24 @@ saveEntry = async function () {
   if (items.some(item => item.unitPrice <= 0)) return alert("กรุณาใส่ราคาให้ครบทุกรายการ");
   const entryDate = document.getElementById("entryDate").value || new Date().toISOString().slice(0, 10);
   const billNo = document.getElementById("entryBill").value.trim() || "-";
+
+  if (editingEntryId !== null) {
+    const item = items[0];
+    const { error } = await dbClient.from("job_entries").update({
+      entry_date: entryDate,
+      description: item.description,
+      price: item.unitPrice,
+      quantity: item.quantity,
+      has_vat: item.hasVat,
+      bill_no: billNo
+    }).eq("id", editingEntryId);
+    if (error) return alert("แก้ไขรายการไม่สำเร็จ: " + error.message);
+    closeEntryModal();
+    await loadData();
+    alert("แก้ไขรายการเรียบร้อยแล้ว");
+    return;
+  }
+
   const payload = items.map(item => ({
     customer_id: customer[7],
     entry_date: entryDate,
