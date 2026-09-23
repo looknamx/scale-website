@@ -322,7 +322,7 @@ function renderDetail() {
     const billKey = entry.bill || "-";
     let group = billGroups.find(item => item.key === billKey);
     if (!group) {
-      group = { key: billKey, entries: [], total: 0 };
+      group = { key: billKey, date: entry.date, entries: [], total: 0 };
       billGroups.push(group);
     }
     group.entries.push({ entry, originalIdx: entries.indexOf(entry) });
@@ -338,15 +338,16 @@ function renderDetail() {
 
   let html = '';
   if (filteredEntries.length) {
-    html += '<div class="table-wrap"><table class="table bill-table"><thead><tr><th>เล่มบิล</th><th>ยอดรวมของบิล</th><th></th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table class="table bill-table"><thead><tr><th>วันที่</th><th>เล่มบิล</th><th>ยอดรวมของบิล</th><th></th></tr></thead><tbody>';
     billGroups.forEach((group, groupIdx) => {
       const isOpen = expandedBillKey === group.key;
       html += '<tr class="bill-row" onclick="toggleBillGroup(' + groupIdx + ')">' +
+        '<td>' + formatDate(group.date) + '</td>' +
         '<td><b>' + escapeHtml(group.key) + '</b><small>' + group.entries.length + ' รายการ</small></td>' +
         '<td class="bill-total">฿' + formatPrice(group.total) + '</td>' +
         '<td class="bill-toggle">' + (isOpen ? '▲' : '▼') + '</td></tr>';
       if (!isOpen) return;
-      html += '<tr class="bill-detail-row"><td colspan="3"><div class="bill-items"><table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
+      html += '<tr class="bill-detail-row"><td colspan="4"><div class="bill-items"><table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>';
       group.entries.forEach(({ entry: e, originalIdx }) => {
         html += '<tr><td>' + formatDate(e.date) + '</td><td><b>' + escapeHtml(e.desc) + '</b></td>' +
           '<td>' + (e.quantity || 1) + '</td><td class="item-price">฿' + formatPrice(e.price) + '</td>' +
