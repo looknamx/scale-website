@@ -22,6 +22,8 @@ create table if not exists public.job_entries (
   entry_date date not null default current_date,
   description text not null,
   price numeric(12, 2) not null default 0 check (price >= 0),
+  quantity integer not null default 1 check (quantity > 0),
+  has_vat boolean not null default false,
   bill_no text not null default '-',
   created_at timestamptz not null default now()
 );

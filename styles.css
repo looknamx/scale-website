@@ -308,6 +308,22 @@ nav { display: flex; flex-direction: column; gap: 3px; }
 }
 .full { width: 100%; margin-top: 18px; }
 
+.entry-items-head { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.entry-items-head b { font-size: 12px; }
+.entry-items { display: grid; gap: 12px; margin-top: 10px; }
+.entry-item-row { border: 1px solid var(--line); border-radius: 11px; padding: 13px; background: #fafbfd; }
+.entry-item-top { display: grid; grid-template-columns: 1fr 90px 34px; gap: 9px; align-items: end; }
+.entry-item-bottom { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.entry-item-row label { margin: 0; }
+.entry-item-row input { background: #fff; }
+.entry-vat { display: flex !important; align-items: center; gap: 7px; min-height: 40px; white-space: nowrap; }
+.entry-vat input { width: auto; margin: 0; }
+.entry-remove { border: 0; background: none; color: #d32f2f; height: 40px; cursor: pointer; font-size: 18px; }
+.entry-line-total { margin-top: 10px; text-align: right; color: var(--primary); font-size: 12px; font-weight: 700; }
+.entry-grand-total { display: flex; justify-content: space-between; margin-top: 14px; padding: 13px 15px; border-radius: 10px; background: var(--primary-bg); }
+.entry-grand-total span { color: var(--muted); font-size: 12px; }
+.entry-grand-total strong { color: var(--primary); }
+
 /* ===== Confirm Dialog ===== */
 .confirm-overlay {
   display: none; position: fixed; inset: 0;

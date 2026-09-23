@@ -320,16 +320,18 @@ function renderDetail() {
   let html = '';
   if (filteredEntries.length) {
     html += '<div class="table-wrap"><table class="table"><thead><tr>' +
-      '<th>วันที่</th><th>รายละเอียด</th><th>ราคา (บาท)</th><th>เล่มบิล</th><th></th>' +
+      '<th>วันที่</th><th>เล่มบิล</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา</th><th>ภาษี</th><th></th>' +
       '</tr></thead><tbody>';
     
     entries.forEach((e, originalIdx) => {
       if (detailYear !== "all" && getYearFromDate(e.date) !== detailYear) return;
       html += '<tr>' +
         '<td>' + formatDate(e.date) + '</td>' +
-        '<td><b>' + e.desc + '</b></td>' +
-        '<td style="color:var(--primary);font-weight:700">฿' + formatPrice(e.price) + '</td>' +
         '<td>' + e.bill + '</td>' +
+        '<td><b>' + e.desc + '</b></td>' +
+        '<td>' + (e.quantity || 1) + '</td>' +
+        '<td style="color:var(--primary);font-weight:700">฿' + formatPrice(e.price) + '</td>' +
+        '<td>' + (e.hasVat ? '<span class="tag orange">VAT 7%</span>' : '-') + '</td>' +
         '<td><button class="danger-btn" onclick="confirmDeleteEntry(' + originalIdx + ')">🗑️ ลบ</button></td>' +
         '</tr>';
     });
@@ -408,10 +410,60 @@ function openAddEntry() {
   const cust = data[currentDetail.province][currentDetail.index];
   document.getElementById("entryModalSub").textContent = "เพิ่มรายการให้ " + cust[0];
   document.getElementById("entryDate").value = new Date().toISOString().split("T")[0];
-  document.getElementById("entryDesc").value = "";
-  document.getElementById("entryPrice").value = "";
   document.getElementById("entryBill").value = "";
+  document.getElementById("entryItems").innerHTML = "";
+  addEntryItemRow();
+  updateEntryTotals();
   document.getElementById("entryModal").classList.add("open");
+}
+
+function addEntryItemRow() {
+  const row = document.createElement("div");
+  row.className = "entry-item-row";
+  row.innerHTML = `
+    <div class="entry-item-top">
+      <label>รายละเอียด<input class="entry-item-desc" placeholder="เช่น ตราชั่ง 100 ตัน" oninput="updateEntryTotals()"></label>
+      <label>จำนวน<input class="entry-item-qty" type="number" min="1" value="1" oninput="updateEntryTotals()"></label>
+      <button type="button" class="entry-remove" title="ลบรายการ" onclick="removeEntryItemRow(this)">×</button>
+    </div>
+    <div class="entry-item-bottom">
+      <label>ราคาต่อหน่วย (บาท)<input class="entry-item-price" type="number" min="0" step="0.01" placeholder="0.00" oninput="updateEntryTotals()"></label>
+      <label class="entry-vat"><input class="entry-item-vat" type="checkbox" onchange="updateEntryTotals()"> ภาษี 7%</label>
+    </div>
+    <div class="entry-line-total">รวมรายการ ฿0</div>
+  `;
+  document.getElementById("entryItems").appendChild(row);
+}
+
+function removeEntryItemRow(button) {
+  const rows = document.querySelectorAll(".entry-item-row");
+  if (rows.length === 1) return alert("ต้องมีอย่างน้อย 1 รายการ");
+  button.closest(".entry-item-row").remove();
+  updateEntryTotals();
+}
+
+function getEntryFormItems() {
+  return Array.from(document.querySelectorAll(".entry-item-row")).map(row => {
+    const quantity = Math.max(1, Number(row.querySelector(".entry-item-qty").value) || 1);
+    const unitPrice = Math.max(0, Number(row.querySelector(".entry-item-price").value) || 0);
+    const hasVat = row.querySelector(".entry-item-vat").checked;
+    return {
+      row,
+      description: row.querySelector(".entry-item-desc").value.trim(),
+      quantity,
+      unitPrice,
+      hasVat,
+      total: quantity * unitPrice * (hasVat ? 1.07 : 1)
+    };
+  });
+}
+
+function updateEntryTotals() {
+  const items = getEntryFormItems();
+  items.forEach(item => {
+    item.row.querySelector(".entry-line-total").textContent = "รวมรายการ ฿" + formatPrice(item.total);
+  });
+  document.getElementById("entryGrandTotal").textContent = "฿" + formatPrice(items.reduce((sum, item) => sum + item.total, 0));
 }
 
 function closeEntryModal() {

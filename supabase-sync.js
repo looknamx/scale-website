@@ -60,7 +60,10 @@ function rebuildData(rows) {
         id: entry.id,
         date: entry.entry_date,
         desc: entry.description,
-        price: Number(entry.price),
+        unitPrice: Number(entry.price),
+        quantity: Number(entry.quantity) || 1,
+        hasVat: Boolean(entry.has_vat),
+        price: Number(entry.price) * (Number(entry.quantity) || 1) * (entry.has_vat ? 1.07 : 1),
         bill: entry.bill_no
       }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -85,7 +88,7 @@ async function loadData() {
   const detailId = currentCustomerId();
   const { data: rows, error } = await dbClient
     .from("customers")
-    .select("id,name,phone,job_type,job_no,address,province,created_year,created_at,job_entries(id,entry_date,description,price,bill_no)")
+    .select("id,name,phone,job_type,job_no,address,province,created_year,created_at,job_entries(id,entry_date,description,price,quantity,has_vat,bill_no)")
     .order("created_at", { ascending: true });
   loadingData = false;
   if (error) {
@@ -168,17 +171,21 @@ executeDeleteCustomer = async function () {
 saveEntry = async function () {
   if (!currentDetail) return;
   const customer = data[currentDetail.province][currentDetail.index];
-  const description = document.getElementById("entryDesc").value.trim();
-  const price = document.getElementById("entryPrice").value;
-  if (!description) return alert("กรุณาใส่รายละเอียด");
-  if (!price) return alert("กรุณาใส่ราคา");
-  const { error } = await dbClient.from("job_entries").insert({
+  const items = getEntryFormItems();
+  if (items.some(item => !item.description)) return alert("กรุณาใส่รายละเอียดให้ครบทุกรายการ");
+  if (items.some(item => item.unitPrice <= 0)) return alert("กรุณาใส่ราคาให้ครบทุกรายการ");
+  const entryDate = document.getElementById("entryDate").value || new Date().toISOString().slice(0, 10);
+  const billNo = document.getElementById("entryBill").value.trim() || "-";
+  const payload = items.map(item => ({
     customer_id: customer[7],
-    entry_date: document.getElementById("entryDate").value || new Date().toISOString().slice(0, 10),
-    description,
-    price: Number(price),
-    bill_no: document.getElementById("entryBill").value.trim() || "-"
-  });
+    entry_date: entryDate,
+    description: item.description,
+    price: item.unitPrice,
+    quantity: item.quantity,
+    has_vat: item.hasVat,
+    bill_no: billNo
+  }));
+  const { error } = await dbClient.from("job_entries").insert(payload);
   if (error) return alert("เพิ่มรายการไม่สำเร็จ: " + error.message);
   closeEntryModal();
   await loadData();
